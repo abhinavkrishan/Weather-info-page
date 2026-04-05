@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Weather</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Syne:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --sky: #0b1d3a;
+    --sky2: #112952;
+    --accent: #f5c842;
+    --muted: #6b8ab0;
+    --text: #e8f0ff;
+    --text2: #9ab4d4;
+    --card: rgba(255,255,255,0.05);
+    --card-border: rgba(255,255,255,0.10);
+    --radius: 16px;
+  }
+
+  html, body {
+    min-height: 100vh;
+    background: var(--sky);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+  }
+
+  body {
+    background: radial-gradient(ellipse at 20% 0%, #1a3a6e 0%, #0b1d3a 55%, #060f1f 100%);
+    padding: 2rem 1rem 4rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* Stars */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 15% 20%, rgba(255,255,255,0.6) 0%, transparent 100%),
+      radial-gradient(1px 1px at 40% 10%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 70% 5%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 85% 30%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 55% 40%, rgba(255,255,255,0.2) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 30% 60%, rgba(255,255,255,0.15) 0%, transparent 100%),
+      radial-gradient(1px 1px at 90% 55%, rgba(255,255,255,0.35) 0%, transparent 100%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page { position: relative; z-index: 1; width: 100%; max-width: 560px; }
+
+  /* Header */
+  header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+    animation: fadeUp 0.6s ease both;
+  }
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 6vw, 3rem);
+    color: var(--accent);
+    letter-spacing: -0.5px;
+    line-height: 1;
+  }
+  header p {
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    margin-top: 6px;
+    text-transform: uppercase;
+  }
+
+  /* Search */
+  .search-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 2rem;
+    animation: fadeUp 0.6s ease 0.1s both;
+  }
+  .search-bar input {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius);
+    padding: 12px 18px;
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-bar input::placeholder { color: var(--muted); }
+  .search-bar input:focus { border-color: rgba(245,200,66,0.5); }
+  .search-bar button {
+    background: var(--accent);
+    color: #0b1d3a;
+    border: none;
+    border-radius: var(--radius);
+    padding: 12px 20px;
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+    white-space: nowrap;
+  }
+  .search-bar button:hover { opacity: 0.88; }
+  .search-bar button:active { transform: scale(0.97); }
+  .search-bar button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Main weather card */
+  .main-card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius);
+    padding: 2rem;
+    margin-bottom: 1rem;
+    animation: fadeUp 0.6s ease 0.2s both;
+  }
+  .city-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+  }
+  .city-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    color: var(--text);
+    line-height: 1.1;
+  }
+  .city-country {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .local-time {
+    font-size: 13px;
+    color: var(--muted);
+    text-align: right;
+  }
+  .temp-section {
+    display: flex;
+    align-items: flex-end;
+    gap: 1rem;
+    margin-bottom: 1.2rem;
+  }
+  .temp-number {
+    font-family: 'Playfair Display', serif;
+    font-size: 80px;
+    color: var(--text);
+    line-height: 1;
+    letter-spacing: -4px;
+  }
+  .temp-meta { padding-bottom: 10px; }
+  .temp-unit { font-size: 28px; color: var(--muted); }
+  .weather-desc {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 3px;
+  }
+  .feels-like { font-size: 13px; color: var(--muted); }
+
+  /* Stats row */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--card-border);
+  }
+  .stat { text-align: center; }
+  .stat-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+  }
+  .stat-val {
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .stat-unit { font-size: 12px; color: var(--muted); }
+
+  /* Forecast */
+  .forecast-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 10px;
+    animation: fadeUp 0.6s ease 0.3s both;
+  }
+  .forecast-row {
+    display: flex;
+    gap: 8px;
+    animation: fadeUp 0.6s ease 0.35s both;
+  }
+  .day-card {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 14px 6px;
+    text-align: center;
+  }
+  .day-name { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .day-icon { font-size: 20px; margin-bottom: 6px; }
+  .day-high { font-size: 16px; font-weight: 500; color: var(--text); }
+  .day-low { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .day-rain { font-size: 11px; color: #6ab0f5; margin-top: 4px; }
+
+  /* Loading / error */
+  .state-msg {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--muted);
+    font-size: 15px;
+    animation: fadeUp 0.5s ease both;
+  }
+  .state-msg .spinner {
+    width: 28px; height: 28px;
+    border: 2px solid var(--card-border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 1rem;
+  }
+
+  /* Weather icon SVG */
+  .wx-icon { width: 52px; height: 52px; display: block; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <h1>Skies</h1>
+    <p>Live weather anywhere</p>
+  </header>
+
+  <div class="search-bar">
+    <input type="text" id="cityInput" placeholder="Search city… e.g. Tokyo, Mumbai" />
+    <button id="searchBtn" onclick="fetchWeather()">Search</button>
+  </div>
+
+  <div id="output">
+    <div class="state-msg">
+      Enter a city name above to get the current weather.
+    </div>
+  </div>
+
+</div>
+
+<script>
+const ICONS = {
+  sunny: `<svg class="wx-icon" viewBox="0 0 52 52" fill="none"><circle cx="26" cy="26" r="11" fill="#f5c842"/><line x1="26" y1="6" x2="26" y2="2" stroke="#f5c842" stroke-width="2.5" stroke-linecap="round"/><line x1="26" y1="50" x2="26" y2="46" stroke="#f5c842" stroke-width="2.5" stroke-linecap="round"/><line x1="6" y1="26" x2="2" y2="26" stroke="#f5c842" stroke-width="2.5" stroke-linecap="round"/><line x1="50" y1="26" x2="46" y2="26" stroke="#f5c842" stroke-width="2.5" stroke-linecap="round"/><line x1="12" y1="12" x2="9" y2="9" stroke="#f5c842" stroke-width="2.5" stroke-linecap="round"/><line x1="43" y1="43" x2="40" y2="40" stroke="#f5c842" stroke-width="2.5" stroke-linecap="round"/><line x1="40" y1="12" x2="43" y2="9" stroke="#f5c842" stroke-width="2.5" stroke-linecap="round"/><line x1="9" y1="43" x2="12" y2="40" stroke="#f5c842" stroke-width="2.5" stroke-linecap="round"/></svg>`,
+  cloudy: `<svg class="wx-icon" viewBox="0 0 52 52" fill="none"><circle cx="18" cy="22" r="9" fill="#f5c842" opacity="0.8"/><ellipse cx="26" cy="32" rx="14" ry="9" fill="#6b8ab0" opacity="0.7"/><ellipse cx="36" cy="34" rx="11" ry="8" fill="#6b8ab0" opacity="0.8"/><ellipse cx="20" cy="35" rx="10" ry="7.5" fill="#6b8ab0" opacity="0.7"/></svg>`,
+  rainy: `<svg class="wx-icon" viewBox="0 0 52 52" fill="none"><ellipse cx="26" cy="22" rx="14" ry="9" fill="#6b8ab0" opacity="0.8"/><ellipse cx="36" cy="24" rx="11" ry="8" fill="#6b8ab0" opacity="0.8"/><line x1="18" y1="36" x2="15" y2="42" stroke="#6ab0f5" stroke-width="2" stroke-linecap="round"/><line x1="26" y1="36" x2="23" y2="42" stroke="#6ab0f5" stroke-width="2" stroke-linecap="round"/><line x1="34" y1="36" x2="31" y2="42" stroke="#6ab0f5" stroke-width="2" stroke-linecap="round"/></svg>`,
+  snowy: `<svg class="wx-icon" viewBox="0 0 52 52" fill="none"><ellipse cx="26" cy="22" rx="14" ry="9" fill="#9ab4d4" opacity="0.8"/><circle cx="18" cy="38" r="2.5" fill="#e8f0ff" opacity="0.8"/><circle cx="26" cy="40" r="2.5" fill="#e8f0ff" opacity="0.8"/><circle cx="34" cy="38" r="2.5" fill="#e8f0ff" opacity="0.8"/><circle cx="22" cy="44" r="2" fill="#e8f0ff" opacity="0.6"/><circle cx="30" cy="45" r="2" fill="#e8f0ff" opacity="0.6"/></svg>`,
+  stormy: `<svg class="wx-icon" viewBox="0 0 52 52" fill="none"><ellipse cx="26" cy="20" rx="16" ry="10" fill="#4a5a7a" opacity="0.9"/><polygon points="28,30 22,40 27,40 22,50 34,36 28,36" fill="#f5c842"/></svg>`,
+  foggy: `<svg class="wx-icon" viewBox="0 0 52 52" fill="none"><line x1="10" y1="20" x2="42" y2="20" stroke="#9ab4d4" stroke-width="2.5" stroke-linecap="round" opacity="0.6"/><line x1="8" y1="28" x2="44" y2="28" stroke="#9ab4d4" stroke-width="2.5" stroke-linecap="round" opacity="0.5"/><line x1="14" y1="36" x2="38" y2="36" stroke="#9ab4d4" stroke-width="2.5" stroke-linecap="round" opacity="0.4"/></svg>`,
+};
+
+const FORECAST_ICONS = { sunny:'☀️', cloudy:'⛅', rainy:'🌧', snowy:'❄️', stormy:'⛈', foggy:'🌫' };
+
+function pickIcon(cond) {
+  if (!cond) return 'cloudy';
+  const c = cond.toLowerCase();
+  if (c.includes('thunder') || c.includes('storm')) return 'stormy';
+  if (c.includes('snow') || c.includes('sleet')) return 'snowy';
+  if (c.includes('rain') || c.includes('shower') || c.includes('drizzle')) return 'rainy';
+  if (c.includes('fog') || c.includes('mist') || c.includes('haze')) return 'foggy';
+  if (c.includes('cloud') || c.includes('overcast')) return 'cloudy';
+  return 'sunny';
+}
+
+function setLoading() {
+  document.getElementById('output').innerHTML = `<div class="state-msg"><div class="spinner"></div>Fetching weather data…</div>`;
+}
+function setError(msg) {
+  document.getElementById('output').innerHTML = `<div class="state-msg">⚠️ ${msg}</div>`;
+}
+
+document.getElementById('cityInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') fetchWeather();
+});
+
+async function fetchWeather() {
+  const city = document.getElementById('cityInput').value.trim();
+  if (!city) return;
+  const btn = document.getElementById('searchBtn');
+  btn.disabled = true;
+  btn.textContent = '…';
+  setLoading();
+
+  const prompt = `You are a weather data API. Return ONLY valid JSON, no markdown, no explanation.
+For the city "${city}", return this exact structure:
+{
+  "city": "full city name",
+  "country": "country name",
+  "timezone": "e.g. UTC+5:30",
+  "current": {
+    "temp_c": number,
+    "feels_like_c": number,
+    "condition": "short description e.g. Partly cloudy",
+    "humidity": number,
+    "wind_kph": number,
+    "uv_index": number
+  },
+  "forecast": [
+    { "day": "Mon", "high_c": number, "low_c": number, "condition": "short", "rain_chance": number },
+    { "day": "Tue", "high_c": number, "low_c": number, "condition": "short", "rain_chance": number },
+    { "day": "Wed", "high_c": number, "low_c": number, "condition": "short", "rain_chance": number },
+    { "day": "Thu", "high_c": number, "low_c": number, "condition": "short", "rain_chance": number },
+    { "day": "Fri", "high_c": number, "low_c": number, "condition": "short", "rain_chance": number }
+  ]
+}
+Use realistic, plausible weather for that city and current season (April 2026). Return ONLY the JSON object.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const raw = data.content.map(b => b.text || '').join('');
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const wx = JSON.parse(clean);
+    renderWeather(wx);
+  } catch(e) {
+    setError('Could not fetch weather. Please try again.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Search';
+  }
+}
+
+function renderWeather(wx) {
+  const c = wx.current;
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  const dateStr = now.toLocaleDateString([], {weekday:'long', month:'long', day:'numeric'});
+  const iconKey = pickIcon(c.condition);
+
+  const forecastHTML = wx.forecast.map(f => {
+    const fi = FORECAST_ICONS[pickIcon(f.condition)] || '⛅';
+    return `<div class="day-card">
+      <div class="day-name">${f.day}</div>
+      <div class="day-icon">${fi}</div>
+      <div class="day-high">${Math.round(f.high_c)}°</div>
+      <div class="day-low">${Math.round(f.low_c)}°</div>
+      <div class="day-rain">${f.rain_chance}%</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('output').innerHTML = `
+    <div class="main-card">
+      <div class="city-row">
+        <div>
+          <div class="city-name">${wx.city}</div>
+          <div class="city-country">${wx.country} · ${wx.timezone}</div>
+        </div>
+        <div class="local-time">
+          <div style="font-size:15px;font-weight:500;color:var(--text)">${timeStr}</div>
+          <div>${dateStr}</div>
+        </div>
+      </div>
+      <div class="temp-section">
+        <div class="temp-number">${Math.round(c.temp_c)}</div>
+        <div class="temp-meta">
+          <span class="temp-unit">°C</span>
+          <div class="weather-desc" style="margin-top:4px">${c.condition}</div>
+          <div class="feels-like">Feels like ${Math.round(c.feels_like_c)}°C</div>
+        </div>
+        ${ICONS[iconKey]}
+      </div>
+      <div class="stats-row">
+        <div class="stat">
+          <div class="stat-label">Humidity</div>
+          <div class="stat-val">${c.humidity}<span class="stat-unit">%</span></div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Wind</div>
+          <div class="stat-val">${Math.round(c.wind_kph)}<span class="stat-unit"> kph</span></div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">UV Index</div>
+          <div class="stat-val">${c.uv_index}</div>
+        </div>
+      </div>
+    </div>
+    <p class="forecast-label">5-day forecast</p>
+    <div class="forecast-row">${forecastHTML}</div>
+  `;
+}
+</script>
+</body>
+</html>
